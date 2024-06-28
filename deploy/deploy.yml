@@ -1,0 +1,89 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ruoyi-fe
+  namespace: sg-project
+  labels:
+    app: ruoyi-fe
+    version: v1
+  annotations:
+    kubesphere.io/creator: zyc
+    kubesphere.io/serviceType: statelessservice
+spec:
+  ports:
+    - name: tcp-80
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  selector:
+    app: ruoyi-fe
+  type: NodePort
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  internalTrafficPolicy: Cluster
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ruoyi-fe-v1
+  namespace: sg-project
+  labels:
+    app: ruoyi-fe
+    version: v1
+  annotations:
+    deployment.kubernetes.io/revision: '1'
+    kubesphere.io/creator: zyc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ruoyi-fe
+      version: v1
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ruoyi-fe
+        version: v1
+      annotations:
+        kubesphere.io/creator: zyc
+        kubesphere.io/imagepullsecrets: '{}'
+    spec:
+      volumes:
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+            type: ''
+      containers:
+        - name: container-dinltj
+          image: '$REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-fe:SNAPSHOT-$BUILD_NUMBER'
+          ports:
+            - name: tcp-80
+              containerPort: 80
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: host-time
+              readOnly: true
+              mountPath: /etc/localtime
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: default
+      serviceAccount: default
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
